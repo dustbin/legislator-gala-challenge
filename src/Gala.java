@@ -1,87 +1,157 @@
 import java.util.*;
 
 public class Gala {
-    public static void main(){
+    public static void main(String[] args){
+        List<String> guests = new ArrayList<>();
+        for(int i=0;i<10;++i) {
+            guests.add("guest_" + i);
+        }
+        List<Preference> preferences = new ArrayList<>();
+        preferences.add(new Preference("avoid", guests.get(0), guests.get(1)));
+        preferences.add(new Preference("avoid", guests.get(1), guests.get(2)));
+        preferences.add(new Preference("avoid", guests.get(2), guests.get(3)));
+        preferences.add(new Preference("avoid", guests.get(3), guests.get(4)));
+        preferences.add(new Preference("avoid", guests.get(4), guests.get(5)));
 
+        preferences.add(new Preference("prefer", guests.get(0), guests.get(4)));
+        preferences.add(new Preference("prefer", guests.get(1), guests.get(5)));
+        preferences.add(new Preference("prefer", guests.get(2), guests.get(6)));
+        preferences.add(new Preference("prefer", guests.get(3), guests.get(7)));
+        preferences.add(new Preference("prefer", guests.get(4), guests.get(3)));
+        preferences.add(new Preference("prefer", guests.get(5), guests.get(2)));
+
+        Gala gala = new Gala(5, guests,preferences);
+        gala.plan();
+        System.out.println(gala.toJSON());
     }
-    public void plan(int num_tables, List<String> guests, List<Preference> preferencesList){
-        Map<String,List<String>> avoid =new HashMap<>();
-        Map<String,List<String>> prefer =new HashMap<>();
-        List<List<String>> tables = new ArrayList<>();
-        for(Preference preference: preferencesList){
+    protected int numTables;
+    protected List<String> guestList;
+    protected List<Preference> preferenceList;
+    protected Map<String, List<String>> avoidIndex;
+    protected Map<String, List<String>> preferIndex;
+    protected List<List<String>> tables;
+    public Gala(int numTables, List<String> guests, List<Preference> preferences){
+        this.numTables=numTables;
+        this.guestList=guests;
+        this.preferenceList=preferences;
+    }
+    public String toJSON(){
+        List<String> jsonTables = new ArrayList<>();
+        for(int i=0;i<tables.size();++i) {
+            jsonTables.add("{table:"+i+",guests:["+String.join(",",tables.get(i))+"]}");
+        }
+        return "{"+String.join(",", jsonTables)+"}";
+    }
+    public void plan(){
+        generateIndexes();
+        generateTables();
+        for(String guest: guestList){
+            seatGuest(guest);
+        }
+    }
+    protected void generateIndexes(){
+        avoidIndex = new HashMap<>();
+        preferIndex = new HashMap<>();
+        for(Preference preference: preferenceList){
             if(preference.isAvoid()){
-                if(!avoid.containsKey(preference.getFirstGuest())){
-                    avoid.put(preference.getFirstGuest(),new ArrayList<>());
+                if(!avoidIndex.containsKey(preference.getFirstGuest())){
+                    avoidIndex.put(preference.getFirstGuest(),new ArrayList<>());
                 }
-                avoid.get(preference.getFirstGuest()).add(preference.getSecondGuest());
-                if(!avoid.containsKey(preference.getSecondGuest())){
-                    avoid.put(preference.getSecondGuest(),new ArrayList<>());
+                avoidIndex.get(preference.getFirstGuest()).add(preference.getSecondGuest());
+                if(!avoidIndex.containsKey(preference.getSecondGuest())){
+                    avoidIndex.put(preference.getSecondGuest(),new ArrayList<>());
                 }
-                avoid.get(preference.getSecondGuest()).add(preference.getFirstGuest());
+                avoidIndex.get(preference.getSecondGuest()).add(preference.getFirstGuest());
             }else{
-                if(!prefer.containsKey(preference.getFirstGuest())){
-                    prefer.put(preference.getFirstGuest(),new ArrayList<>());
+                if(!preferIndex.containsKey(preference.getFirstGuest())){
+                    preferIndex.put(preference.getFirstGuest(),new ArrayList<>());
                 }
-                prefer.get(preference.getFirstGuest()).add(preference.getSecondGuest());
-                if(!prefer.containsKey(preference.getSecondGuest())){
-                    prefer.put(preference.getSecondGuest(),new ArrayList<>());
+                preferIndex.get(preference.getFirstGuest()).add(preference.getSecondGuest());
+                if(!preferIndex.containsKey(preference.getSecondGuest())){
+                    preferIndex.put(preference.getSecondGuest(),new ArrayList<>());
                 }
-                prefer.get(preference.getSecondGuest()).add(preference.getFirstGuest());
+                preferIndex.get(preference.getSecondGuest()).add(preference.getFirstGuest());
             }
         }
-        for(int i=0;i<num_tables;++i){
+    }
+    protected void generateTables(){
+        tables = new ArrayList<>();
+        for(int i=0;i<numTables;++i){
             tables.add(new ArrayList<>());
         }
-        for(String guest: guests){
-            int i;
-            int[] avoidScore = new int[num_tables];
-            int[] preferScore = new int[num_tables];
-            List<String> guestAvoids = avoid.get(guest);
-            List<String> guestPrefers = prefer.get(guest);
-            List<Integer> lowestAvoidTables = new ArrayList<>();
-            int lowestAvoidScore = guestAvoids.size();
-            int largestTable = 0;
-            for(i=0;i<num_tables;++i) {
-                List<String> table = tables.get(i);
-                for(String seated: table){
-                    if(guestAvoids.contains(seated)){avoidScore[i]++;}
-                    if(guestPrefers.contains(seated)){preferScore[i]++;}
-                }
-                if(avoidScore[i]<lowestAvoidScore){
-                    lowestAvoidTables =new ArrayList<>(i);
-                }else if(avoidScore[i]==lowestAvoidScore){
-                    lowestAvoidTables.add(i);
-                }
-                if(table.size()>largestTable){
-                    largestTable=table.size();
-                }
-            }
-            if(lowestAvoidTables.size()==1){
-                tables.get(lowestAvoidTables.get(0)).add(guest);
-                continue;
-            }
-            List<Integer> highestPreferTables = new ArrayList<>();
-            int highestPreferScore = 0;
-            for(int table: lowestAvoidTables){
-                if(preferScore[table]>highestPreferScore){
-                    highestPreferTables = new ArrayList<>(table);
-                }else if(preferScore[table]==highestPreferScore){
-                    highestPreferTables.add(table);
-                }
-            }
-            if(highestPreferTables.size()==1){
-                tables.get(highestPreferTables.get(0)).add(guest);
-                continue;
-            }
-            int smallestTable = largestTable;
-            int smallestTableIndex = 0;
-            for(int table: highestPreferTables){
-                if(tables.get(table).size()<smallestTable){
-                    smallestTableIndex = table;
-                    smallestTable = tables.get(table).size();
-                }
-            }
-            tables.get(smallestTableIndex).add(guest);
+    }
+    protected void seatGuest(String guest){
+        List<Integer> lowestAvoidTables = lowestTablesFor(guest, avoidIndex.get(guest), allTables());
+        if(lowestAvoidTables.size()==1){
+            tables.get(lowestAvoidTables.get(0)).add(guest);
+            return;
         }
+        List<Integer> highestPreferTables = highestTablesFor(guest, preferIndex.get(guest), lowestAvoidTables);
+        if(highestPreferTables.size()==1){
+            tables.get(highestPreferTables.get(0)).add(guest);
+            return;
+        }
+        tables.get(smallestTable(highestPreferTables)).add(guest);
+    }
+    protected List<Integer> lowestTablesFor(String guest, List<String> others, List<Integer> startingTables){
+        if(others == null){
+            return startingTables;
+        }
+        int lowestScore = others.size();
+        List<Integer> lowestAvoidTables = new ArrayList<>();
+        for(int table: startingTables) {
+            int score = 0;
+            for(String seated: tables.get(table)){
+                if(others.contains(seated)){++score;}
+            }
+            if(score<lowestScore){
+                lowestAvoidTables = new ArrayList<>();
+                lowestScore = score;
+            }
+            if(score==lowestScore){
+                lowestAvoidTables.add(table);
+            }
+        }
+        return lowestAvoidTables;
+    }
+    protected List<Integer> highestTablesFor(String guest, List<String> others, List<Integer> startingTables){
+        if(others == null){
+            return startingTables;
+        }
+        int highestScore = 0;
+        List<Integer> highestTables = new ArrayList<>();
+        for(int table: startingTables){
+            int score = 0;
+            for(String seated: tables.get(table)){
+                if(others.contains(seated)){++score;}
+            }
+            if(score>highestScore){
+                highestTables = new ArrayList<>();
+                highestScore = score;
+            }
+            if(score==highestScore){
+                highestTables.add(table);
+            }
+        }
+        return highestTables;
+    }
+    protected List<Integer> allTables(){
+        List<Integer> tables = new ArrayList<>();
+        for(int i=0;i<numTables;++i){
+            tables.add(i);
+        }
+        return tables;
+    }
+    protected int smallestTable(List<Integer> tableList){
+        int index = tableList.get(0);
+        int smallest = Integer.MAX_VALUE;
+        for(int table: tableList){
+            int size = tables.get(table).size();
+            if(size<smallest){
+                index = table;
+                smallest = size;
+            }
+        }
+        return index;
     }
 }
