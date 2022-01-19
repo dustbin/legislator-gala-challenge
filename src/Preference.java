@@ -1,4 +1,6 @@
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class Preference {
     protected String preference;
@@ -15,11 +17,15 @@ public class Preference {
         return preference.equals("avoid");
     }
 
-    public String getFirstGuest() {
-        return firstGuest;
-    }
+    public void addToIndex(Map<String,List<String>> index){
+        if(!index.containsKey(firstGuest)){
+            index.put(firstGuest,new ArrayList<>());
+        }
+        index.get(firstGuest).add(secondGuest);
 
-    public String getSecondGuest() {
-        return secondGuest;
+        if(!index.containsKey(secondGuest)){
+            index.put(secondGuest,new ArrayList<>());
+        }
+        index.get(secondGuest).add(firstGuest);
     }
 }

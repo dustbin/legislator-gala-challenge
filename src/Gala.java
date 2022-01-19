@@ -54,23 +54,9 @@ public class Gala {
         preferIndex = new HashMap<>();
         for(Preference preference: preferenceList){
             if(preference.isAvoid()){
-                if(!avoidIndex.containsKey(preference.getFirstGuest())){
-                    avoidIndex.put(preference.getFirstGuest(),new ArrayList<>());
-                }
-                avoidIndex.get(preference.getFirstGuest()).add(preference.getSecondGuest());
-                if(!avoidIndex.containsKey(preference.getSecondGuest())){
-                    avoidIndex.put(preference.getSecondGuest(),new ArrayList<>());
-                }
-                avoidIndex.get(preference.getSecondGuest()).add(preference.getFirstGuest());
+                preference.addToIndex(avoidIndex);
             }else{
-                if(!preferIndex.containsKey(preference.getFirstGuest())){
-                    preferIndex.put(preference.getFirstGuest(),new ArrayList<>());
-                }
-                preferIndex.get(preference.getFirstGuest()).add(preference.getSecondGuest());
-                if(!preferIndex.containsKey(preference.getSecondGuest())){
-                    preferIndex.put(preference.getSecondGuest(),new ArrayList<>());
-                }
-                preferIndex.get(preference.getSecondGuest()).add(preference.getFirstGuest());
+                preference.addToIndex(preferIndex);
             }
         }
     }
@@ -81,19 +67,19 @@ public class Gala {
         }
     }
     protected void seatGuest(String guest){
-        List<Integer> lowestAvoidTables = lowestTablesFor(guest, avoidIndex.get(guest), allTables());
+        List<Integer> lowestAvoidTables = lowestTablesFor(avoidIndex.get(guest), allTables());
         if(lowestAvoidTables.size()==1){
             tables.get(lowestAvoidTables.get(0)).add(guest);
             return;
         }
-        List<Integer> highestPreferTables = highestTablesFor(guest, preferIndex.get(guest), lowestAvoidTables);
+        List<Integer> highestPreferTables = highestTablesFor(preferIndex.get(guest), lowestAvoidTables);
         if(highestPreferTables.size()==1){
             tables.get(highestPreferTables.get(0)).add(guest);
             return;
         }
         tables.get(smallestTable(highestPreferTables)).add(guest);
     }
-    protected List<Integer> lowestTablesFor(String guest, List<String> others, List<Integer> startingTables){
+    protected List<Integer> lowestTablesFor(List<String> others, List<Integer> startingTables){
         if(others == null){
             return startingTables;
         }
@@ -114,7 +100,7 @@ public class Gala {
         }
         return lowestAvoidTables;
     }
-    protected List<Integer> highestTablesFor(String guest, List<String> others, List<Integer> startingTables){
+    protected List<Integer> highestTablesFor(List<String> others, List<Integer> startingTables){
         if(others == null){
             return startingTables;
         }
