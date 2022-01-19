@@ -1,3 +1,5 @@
+package gala;
+
 import java.util.*;
 
 public class Gala {
@@ -17,10 +19,10 @@ public class Gala {
         preferences.add(new Preference("prefer", guests.get(1), guests.get(5)));
         preferences.add(new Preference("prefer", guests.get(2), guests.get(6)));
         preferences.add(new Preference("prefer", guests.get(3), guests.get(7)));
-        preferences.add(new Preference("prefer", guests.get(4), guests.get(3)));
-        preferences.add(new Preference("prefer", guests.get(5), guests.get(2)));
+        preferences.add(new Preference("prefer", guests.get(4), guests.get(8)));
+        preferences.add(new Preference("prefer", guests.get(5), guests.get(9)));
 
-        Gala gala = new Gala(5, guests,preferences);
+        Gala gala = new Gala(3, guests,preferences);
         gala.plan();
         System.out.println(gala.toJSON());
     }
@@ -38,7 +40,11 @@ public class Gala {
     public String toJSON(){
         List<String> jsonTables = new ArrayList<>();
         for(int i=0;i<tables.size();++i) {
-            jsonTables.add("{table:"+i+",guests:["+String.join(",",tables.get(i))+"]}");
+            List<String> tableGuests = new ArrayList<>();
+            for(String guest: tables.get(i)){
+                tableGuests.add("\""+guest+"\"");
+            }
+            jsonTables.add("\"table_"+i+"\":["+String.join(",",tableGuests)+"]");
         }
         return "{"+String.join(",", jsonTables)+"}";
     }
